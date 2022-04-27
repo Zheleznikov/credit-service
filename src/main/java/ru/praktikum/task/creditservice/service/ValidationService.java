@@ -4,12 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.praktikum.task.creditservice.dto.RqCredit;
 
+import java.util.Arrays;
+import java.util.stream.IntStream;
+
 @Service
 @RequiredArgsConstructor
 public class ValidationService {
 
     public boolean validateRq(RqCredit data) {
-        return validateRetirementAge(data)
+        return baseValidation(data)
+                        && validateRetirementAge(data)
                         && validateIsPossibleToLendRequiredAmount(data)
                         && validateCreditRating(data)
                         && validateIfUnemployed(data)
@@ -21,17 +25,41 @@ public class ValidationService {
     /**
      * Если возраст превышает пенсионный возраст на момент возврата кредита --> кредит не выдаётся
      */
-    public boolean validateRetirementAge(RqCredit data) {
-        if (data.getAge() <= 0) return false;
+
+    public boolean baseValidation(RqCredit data) {
+        if (data.getAge() < 18) return false;
+        if (data.getRequestedAmount() > 10.0 || data.getRequestedAmount() <= 0) return false;
+        if (data.getIncomeForLastYear() <= 0) return false;
+        if (data.getLoanRepaymentTime() <= 0 || data.getLoanRepaymentTime() > 20) return false;
+
+        int[] creditRatingList = {-2,-1,0,1,2};
+        if (IntStream.of(creditRatingList).noneMatch(x -> x == data.getCreditRating())) return false;
+
+        String [] possible_incoming = {"passive income", "employee", "own business", "unemployed"};
+        if (Arrays.stream(possible_incoming).noneMatch(data.getIncomingSource()::equals)) return false;
+
+        String [] possible_goal = {"mortgage", "business development", "car loan", "personal loan"};
+        if (Arrays.stream(possible_goal).noneMatch(data.getGoal()::equals)) return false;
+
         if (!data.getSex().equals("female") && !data.getSex().equals("male")) return false;
-        return !((data.getAge() >= 65 && data.getSex().equals("male")) || (data.getAge() >= 60 && data.getSex().equals("female")));
+        return true;
+    }
+
+    public boolean validateRetirementAge(RqCredit data) {
+        return !(((data.getAge() + data.getLoanRepaymentTime()) >= 65 && data.getSex().equals("male"))
+                || ((data.getAge() + data.getLoanRepaymentTime()) >= 60 && data.getSex().equals("female")));
     }
 
     /**
      * Если результат деления запрошенной суммы на срок погашения в годах более трети годового дохода --> кредит не выдаётся
      */
     public boolean validateIsPossibleToLendRequiredAmount(RqCredit data) {
-        return (data.getRequestedAmount() / data.getLoanRepaymentTime()) <= (data.getIncomeForLastYear() / 3);
+        double amount = data.getRequestedAmount();
+        int time = data.getLoanRepaymentTime();
+        double income = data.getIncomeForLastYear();
+        boolean answer = (amount / time) <= (income / 3);
+        System.out.println("Если это " + amount / time + " больше, чем это " + income / 3  + ", то не выдаем и возвращаем false");
+        return answer;
     }
 
     /**
@@ -52,9 +80,9 @@ public class ValidationService {
      * При пассивном доходе выдаётся кредит на сумму до 1 млн, наёмным работникам - до 5 млн, собственное дело - до 10 млн
      */
     public boolean validatePossibleAmountDependsOnIncomingSource(RqCredit data) {
-        if (data.getIncomingSource().equals("passive income") && data.getRequestedAmount() < 1) return true;
-        if (data.getIncomingSource().equals("employee") && data.getRequestedAmount() < 5) return true;
-        if (data.getIncomingSource().equals("own business") && data.getRequestedAmount() < 10) return true;
+        if (data.getIncomingSource().equals("passive income") && data.getRequestedAmount() <= 1) return true;
+        if (data.getIncomingSource().equals("employee") && data.getRequestedAmount() <= 5) return true;
+        if (data.getIncomingSource().equals("own business") && data.getRequestedAmount() <= 10) return true;
         return false;
     }
 
@@ -62,9 +90,9 @@ public class ValidationService {
      * При кредитном рейтинге -1 выдаётся кредит на сумму до 1 млн, при 0 - до 5 млн, при 1 или 2 - до 10 млн
      */
     public boolean validatePossibleAmountDependsOnCreditRating(RqCredit data) {
-        if (data.getCreditRating() == -1 && data.getRequestedAmount() < 1) return true;
-        if (data.getCreditRating() == 0 && data.getRequestedAmount() < 5) return true;
-        if (data.getCreditRating() > 0 && data.getRequestedAmount() < 10) return true;
+        if (data.getCreditRating() == -1 && data.getRequestedAmount() <= 1) return true;
+        if (data.getCreditRating() == 0 && data.getRequestedAmount() <= 5) return true;
+        if (data.getCreditRating() > 0 && data.getRequestedAmount() <= 10) return true;
         return false;
     }
 

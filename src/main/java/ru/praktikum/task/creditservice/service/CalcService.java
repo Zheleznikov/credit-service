@@ -21,7 +21,7 @@ public class CalcService {
         return round(payment);
     }
 
-    private CalcService calcAll (RqCredit data) {
+    public CalcService calcAll(RqCredit data) {
         baseInterestRate = 10;
         calcInterestRateDependsOnGoal(data);
         calcInterestRateDependsOnCreditRating(data);
@@ -31,7 +31,7 @@ public class CalcService {
     }
 
     private double round(double value) {
-        long factor = (long) Math.pow(10, 2);
+        long factor = (long) Math.pow(10, 3);
         value = value * factor;
         long tmp = Math.round(value);
         return (double) tmp / factor;

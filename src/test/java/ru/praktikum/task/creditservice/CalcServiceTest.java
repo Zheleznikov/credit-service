@@ -1,147 +1,128 @@
 package ru.praktikum.task.creditservice;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import ru.praktikum.task.creditservice.dto.RqCredit;
 import ru.praktikum.task.creditservice.service.CalcService;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 public class CalcServiceTest {
 
-    @Test
-    public void increaseInterestRateDependsOnGoalBusinessDevelopmentShouldBeCalculatedCorrect() {
+    RqCredit data;
+
+    @BeforeEach
+    public void prepareData() {
+        data = new RqCredit()
+                .setIncomeForLastYear(10)
+                .setRequestedAmount(5)
+                .setGoal("mortgage")
+                .setAge(30)
+                .setCreditRating(2)
+                .setIncomingSource("unemployed")
+                .setSex("male")
+                .setLoanRepaymentTime(10);
+    }
+
+    @MethodSource("dataForGoalTest")
+    @ParameterizedTest
+    public void testChangeInterestRateDependsOnGoalBusinessDevelopmentShouldBeCalculatedCorrect(String goal, double rate) {
         CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setGoal("business development");
+        data.setGoal(goal);
         service.calcInterestRateDependsOnGoal(data);
-        assertEquals(service.getBaseInterestRate(), 9.5);
+        assertEquals(service.getBaseInterestRate(), rate);
     }
 
-    @Test
-    public void increaseInterestRateDependsOnGoalMortgageShouldBeCalculatedCorrect() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setGoal("mortgage");
-        service.calcInterestRateDependsOnGoal(data);
-        assertEquals(service.getBaseInterestRate(), 8.0);
+    private static Stream<Arguments> dataForGoalTest() {
+        return Stream.of(
+                Arguments.of("mortgage", 8.0),
+                Arguments.of("personal loan", 11.5),
+                Arguments.of("business development", 9.5)
+        );
     }
 
-    @Test
-    public void increaseInterestRateDependsOnGoalPersonalLoanShouldBeCalculatedCorrect() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setGoal("personal loan");
-        service.calcInterestRateDependsOnGoal(data);
-        assertEquals(service.getBaseInterestRate(), 11.5);
-    }
 
-    @Test
-    public void increaseInterestRateDependsCreditRatingMinusOneShouldBeCalculatedCorrect() {
+    @MethodSource("dataForRatingTest")
+    @ParameterizedTest
+    public void testChangeInterestRateDependsCreditRatingMinusOneShouldBeCalculatedCorrect(int rating, double rate) {
         CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setCreditRating(-1);
+        data.setCreditRating(rating);
         service.calcInterestRateDependsOnCreditRating(data);
-        assertEquals(service.getBaseInterestRate(), 11.5);
+        assertEquals(rate, service.getBaseInterestRate());
     }
 
-    @Test
-    public void increaseInterestRateDependsCreditRatingZeroShouldBeCalculatedCorrect() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setCreditRating(0);
-        service.calcInterestRateDependsOnCreditRating(data);
-        assertEquals(service.getBaseInterestRate(), 10);
+    private static Stream<Arguments> dataForRatingTest() {
+        return Stream.of(
+                Arguments.of(-1, 11.5),
+                Arguments.of(0, 10),
+                Arguments.of(1, 9.75),
+                Arguments.of(2, 9.25)
+        );
     }
 
-    @Test
-    public void increaseInterestRateDependsCreditRatingPlusOneShouldBeCalculatedCorrect() {
+    @MethodSource("dataForCalcAmountLog")
+    @ParameterizedTest
+    public void testChangeInterestRateDependsOnRequestedAmountShouldBeCalculatedCorrect(double amount, double rate) {
         CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setCreditRating(1);
-        service.calcInterestRateDependsOnCreditRating(data);
-        assertEquals(service.getBaseInterestRate(), 9.75);
-    }
-
-    @Test
-    public void increaseInterestRateDependsCreditRatingPlusTwoShouldBeCalculatedCorrect() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setCreditRating(2);
-        service.calcInterestRateDependsOnCreditRating(data);
-        assertEquals(service.getBaseInterestRate(), 9.25);
-    }
-
-    @Test
-    public void increaseInterestRateDependsOnRequestedAmountMinShouldBeCalculatedCorrect() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setRequestedAmount(0.1);
+        data.setRequestedAmount(amount);
         service.calcInterestRateDependsOnRequestedAmount(data);
-        assertEquals(service.getBaseInterestRate(), 11);
+        assertEquals(rate, service.getBaseInterestRate(), 0.25);
     }
 
-    @Test
-    public void increaseInterestRateDependsOnRequestedAmountAverageShouldBeCalculatedCorrect() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setRequestedAmount(1);
-        service.calcInterestRateDependsOnRequestedAmount(data);
-        assertEquals(service.getBaseInterestRate(), 10);
+    private static Stream<Arguments> dataForCalcAmountLog() {
+        return Stream.of(
+                Arguments.of(0.1, 11),
+                Arguments.of(1, 10),
+                Arguments.of(10, 9),
+                Arguments.of(5, 9.5),
+                Arguments.of(7, 9.25)
+        );
     }
 
-    @Test
-    public void increaseInterestRateDependsOnRequestedAmountMaxShouldBeCalculatedCorrect() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setRequestedAmount(10);
-        service.calcInterestRateDependsOnRequestedAmount(data);
-        assertEquals(service.getBaseInterestRate(), 9);
-    }
 
-    @Test
-    public void increaseInterestRateDependsOnIncomingSourcePassiveIncomeShouldBeCalculatedCorrect() {
+
+    @MethodSource("dataForCalcIncome")
+    @ParameterizedTest
+    public void testChangeInterestRateDependsOnIncomingSourcePassiveIncomeShouldBeCalculatedCorrect(String source, double expected) {
         CalcService service = new CalcService();
         RqCredit data = new RqCredit().setIncomingSource("passive income");
         service.calcInterestRateDependsOnIncomingSource(data);
-        assertEquals(service.getBaseInterestRate(), 10.5);
+        assertEquals(10.5, service.getBaseInterestRate());
     }
 
-    @Test
-    public void increaseInterestRateDependsOnIncomingSourceEmployeeShouldBeCalculatedCorrect() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setIncomingSource("employee");
-        service.calcInterestRateDependsOnIncomingSource(data);
-        assertEquals(service.getBaseInterestRate(), 9.75);
+    private static Stream<Arguments> dataForCalcIncome() {
+        return Stream.of(
+                Arguments.of("passive income", 10.5),
+                Arguments.of("employee", 9.75),
+                Arguments.of("own business", 10.25)
+        );
     }
 
-    @Test
-    public void increaseInterestRateDependsOnIncomingSourceOwnBusinessShouldBeCalculatedCorrect() {
+    @MethodSource("dataForCalcTogether")
+    @ParameterizedTest
+    public void testCalcAllShouldCalculateCorrectMaxRate(String goal, int rating, double amount, String src, double expected) {
         CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setIncomingSource("own business");
-        service.calcInterestRateDependsOnIncomingSource(data);
-        assertEquals(service.getBaseInterestRate(), 10.25);
+        RqCredit data = new RqCredit().setGoal(goal)
+                .setCreditRating(rating)
+                .setRequestedAmount(amount)
+                .setIncomingSource(src);
+        service.calcAll(data);
+        assertEquals(expected, service.getBaseInterestRate(), 0.25);
     }
 
-    @Test
-    public void calcAllShouldCalculateCorrectMinRate() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setGoal("mortgage")
-                .setCreditRating(2)
-                .setRequestedAmount(10)
-                .setIncomingSource("employee");
-
-        service.calcInterestRateDependsOnIncomingSource(data);
-        service.calcInterestRateDependsOnGoal(data);
-        service.calcInterestRateDependsOnCreditRating(data);
-        service.calcInterestRateDependsOnRequestedAmount(data);
-        assertEquals(6, service.getBaseInterestRate());
-    }
-
-    @Test
-    public void testCalcAllShouldCalculateCorrectMaxRate() {
-        CalcService service = new CalcService();
-        RqCredit data = new RqCredit().setGoal("personal loan")
-                .setCreditRating(-1)
-                .setRequestedAmount(0.1)
-                .setIncomingSource("own business");
-
-        service.calcInterestRateDependsOnIncomingSource(data);
-        service.calcInterestRateDependsOnGoal(data);
-        service.calcInterestRateDependsOnCreditRating(data);
-        service.calcInterestRateDependsOnRequestedAmount(data);
-        assertEquals(14.25, service.getBaseInterestRate());
+    private static Stream<Arguments> dataForCalcTogether() {
+        return Stream.of(
+                Arguments.of("personal loan", -1, 0.1, "own business", 14.25),
+                Arguments.of("mortgage", 2, 5, "employee", 6.3)
+        );
     }
 
     @Test
@@ -152,9 +133,9 @@ public class CalcServiceTest {
                 .setRequestedAmount(0.1)
                 .setIncomingSource("own business")
                 .setLoanRepaymentTime(1);
-        double v = service.calcYearPayment(data);
-        assertEquals(0.11, service.getBaseInterestRate());
+        assertEquals(0.114, service.calcYearPayment(data));
     }
+
 
 
 }
