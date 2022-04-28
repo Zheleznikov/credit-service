@@ -20,8 +20,6 @@ public class CreditController {
 
     @PostMapping(value = "/check-info-about-credit")
     public RsCredit getInfoAboutCredit(@RequestBody RqCredit data) {
-        System.out.println(data);
-
         return validation.validateRq(data) ?
                 new RsCredit().setYearPayment(calc.calcYearPayment(data)).setIsCreditApproved(true) :
                 new RsCredit().setIsCreditApproved(false);

@@ -22,9 +22,7 @@ public class ValidationService {
                         && validateIfIncomingForYear(data);
     }
 
-    /**
-     * Если возраст превышает пенсионный возраст на момент возврата кредита --> кредит не выдаётся
-     */
+
 
     public boolean baseValidation(RqCredit data) {
         if (data.getAge() < 18) return false;
@@ -45,6 +43,9 @@ public class ValidationService {
         return true;
     }
 
+    /**
+     * Если возраст превышает пенсионный возраст на момент возврата кредита --> кредит не выдаётся
+     */
     public boolean validateRetirementAge(RqCredit data) {
         return !(((data.getAge() + data.getLoanRepaymentTime()) >= 65 && data.getSex().equals("male"))
                 || ((data.getAge() + data.getLoanRepaymentTime()) >= 60 && data.getSex().equals("female")));
@@ -57,9 +58,7 @@ public class ValidationService {
         double amount = data.getRequestedAmount();
         int time = data.getLoanRepaymentTime();
         double income = data.getIncomeForLastYear();
-        boolean answer = (amount / time) <= (income / 3);
-        System.out.println("Если это " + amount / time + " больше, чем это " + income / 3  + ", то не выдаем и возвращаем false");
-        return answer;
+        return (amount / time) <= (income / 3);
     }
 
     /**
