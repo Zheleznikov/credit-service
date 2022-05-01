@@ -15,7 +15,6 @@
 	<description>Test problem for Yandex.Praktirkum</description>
 
 	<properties>
-		<java.version>11</java.version>
 		<maven.compiler.target>11</maven.compiler.target>
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.release>11</maven.compiler.release>
